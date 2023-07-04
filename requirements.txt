@@ -1,0 +1,5 @@
+gtts
+moviepy
+pydub
+requests
+pillow==9.5.0
