@@ -18,3 +18,8 @@ pip install -r requirements.txt
 
 python main.py
 ```
+
+
+### demo
+https://github.com/stars1324/pictureToVideo/assets/26533131/151e010f-1f6b-48b1-b774-97fb76b45c66
+
