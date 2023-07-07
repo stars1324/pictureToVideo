@@ -78,7 +78,7 @@ def handle_movie(voice = []):
         voice_clips.append(
             AudioFileClip(voice[idx]).set_start(start).volumex(0.8))
 
-        txt_clip = TextClip(text_clips[idx], fontsize=10, color='black', font='兰亭黑-繁-中黑')
+        txt_clip = TextClip(text_clips[idx], fontsize=40, color='white',  font='兰亭黑-简-中黑', stroke_color='black', stroke_width=0.8)
         txt_clip = txt_clip.set_pos('bottom').set_duration(duration_clips[idx]).crossfadein(1).crossfadeout(1)
         txt_clip = txt_clip.set_start(start).set_end(end)
         txt_clips.append(txt_clip)
@@ -121,7 +121,7 @@ def handle_movie(voice = []):
     video_clip = video_clip.crossfadein(1).crossfadeout(1)
 
     # 导出视频剪辑
-    video_clip.write_videofile("output1.mp4", fps=24)
+    video_clip.write_videofile("output.mp4", fps=24)
 
 def resize_images(image_path):
     # 打开图片
