@@ -8,6 +8,7 @@ from gtts import gTTS
 from moviepy.editor import *
 from pydub import AudioSegment
 from PIL import Image
+import edge_tts
 
 
 def text_to_voice():
@@ -23,27 +24,49 @@ def text_to_voice():
     contents = re.split(r'[。！？？,，]', content)
 
     for content in contents:
-        content = content.strip()
+        content = content.replace('"', "'").strip()
         if not len(content):
             continue
-
-        filename = './tts/%s.mp3' % content
-        # 转语音
-        g_tts = gTTS(content, lang='zh-CN')
-        g_tts.save(filename)
-
-        # 调整语速 为 1.2 倍速
-        sound = AudioSegment.from_mp3(filename)
-        duration = int(sound.duration_seconds)
-        update_speed_filename = './tts/%s_duration_%f.mp3' % (content, math.ceil(duration * 0.85))
-        cmd = "ffmpeg -y -i %s -filter_complex \"atempo=tempo=%s\" %s" % (filename, '1.2', update_speed_filename)
-        res = subprocess.call(cmd, shell=True)
-        if res == 0:
-            os.remove(filename)
-        voice.append(update_speed_filename)
-
-        print(update_speed_filename)
+        # filename = gtts(content)
+        filename = _edge_tts(content)
+        voice.append(filename)
     return voice
+
+
+def gtts(content):
+    filename = './tts/%s.mp3' % content
+    # 转语音
+    g_tts = gTTS(content, lang='zh-CN')
+    g_tts.save(filename)
+
+    # 调整语速 为 1.2 倍速
+    sound = AudioSegment.from_mp3(filename)
+    duration = int(sound.duration_seconds)
+    update_speed_filename = './tts/%s_duration_%f.mp3' % (content, math.ceil(duration * 0.85))
+    cmd = "ffmpeg -y -i %s -filter_complex \"atempo=tempo=%s\" %s" % (filename, '1.2', update_speed_filename)
+    res = subprocess.call(cmd, shell=True)
+    if res == 0:
+        os.remove(filename)
+    return update_speed_filename
+
+
+def _edge_tts(content):
+    # voice = 'zh-CN-YunxiNeural'
+    # rate = '-4%'
+    # volume = '+0%'
+    # filename = './tts/%s.mp3' % content
+    # tts = edge_tts.Communicate(text=content, voice=voice, rate=rate, volume=volume)
+    # tts.save(filename)
+    filename = './tts/%s.mp3' % content
+    cmd = 'edge-tts --voice zh-CN-YunxiNeural --text "' + content + '" --write-media %s' % filename
+    res = subprocess.call(cmd, shell=True)
+
+    sound = AudioSegment.from_mp3(filename)
+    duration = int(sound.duration_seconds)
+    update_name = './tts/%s_duration_%f.mp3' % (content, duration)
+    os.rename(filename, update_name)
+    return update_name
+    pass
 
 
 def get_all_files(path):
@@ -54,9 +77,11 @@ def get_all_files(path):
     return files
 
 
-def handle_movie(voice = []):
+def handle_movie(voice=None):
     # voice = get_all_files('./tts')
     # 计算所有语音的长度，得出需要视频的长度
+    if voice is None:
+        voice = []
     duration_clips, text_clips = [], []
     for item in voice:
         filename = str(item.split('/')[-1])
@@ -78,11 +103,11 @@ def handle_movie(voice = []):
         voice_clips.append(
             AudioFileClip(voice[idx]).set_start(start).volumex(0.8))
 
-        txt_clip = TextClip(text_clips[idx], fontsize=40, color='white',  font='兰亭黑-简-中黑', stroke_color='black', stroke_width=0.8)
+        txt_clip = TextClip(text_clips[idx], fontsize=40, color='white', font='兰亭黑-简-中黑', stroke_color='black',
+                            stroke_width=0.8)
         txt_clip = txt_clip.set_pos('bottom').set_duration(duration_clips[idx]).crossfadein(1).crossfadeout(1)
         txt_clip = txt_clip.set_start(start).set_end(end)
         txt_clips.append(txt_clip)
-
 
     picture_path = './pictures'
     # 定义每张图片的剪辑，并添加淡入淡出效果
@@ -92,7 +117,6 @@ def handle_movie(voice = []):
     for image in images:
         # 将图片变成 16:9  高度787.5 ，宽度1400
         resize_images(image)
-
 
     image_num = len(images)
     image_duration = duration / image_num
@@ -104,7 +128,8 @@ def handle_movie(voice = []):
 
     # screensize = (640, 360)
     for image_path in get_all_files('./pictures'):
-        image_clip = ImageClip(image_path).set_duration(image_duration).resize(resize_func).set_position(('center', 'center')).set_fps(25)
+        image_clip = ImageClip(image_path).set_duration(image_duration).resize(resize_func).set_position(
+            ('center', 'center')).set_fps(25)
         image_clip = image_clip.crossfadein(1).crossfadeout(1)
         image_clips.append(image_clip)
 
@@ -122,6 +147,7 @@ def handle_movie(voice = []):
 
     # 导出视频剪辑
     video_clip.write_videofile("output.mp4", fps=24)
+
 
 def resize_images(image_path):
     # 打开图片
@@ -152,6 +178,7 @@ def resize_images(image_path):
 
     # 保存图片
     canvas.save(image_path)
+
 
 voice = text_to_voice()
 handle_movie(voice)

@@ -3,3 +3,4 @@ moviepy
 pydub
 requests
 pillow==9.5.0
+edge-tts
